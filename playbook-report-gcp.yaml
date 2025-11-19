@@ -1,0 +1,35 @@
+---
+- name: Install packages for OSCAP and generate report
+  hosts: all
+  become: true
+  tasks:
+  - name: On RockeyLinux 8
+    block:
+    - name: Install packages for OSCAP in RockeyLinux 8
+      yum:
+        name:
+        - openscap-scanner
+        - scap-security-guide
+        state: present
+    - name: Create the Report in RockeyLinux 8
+      ansible.builtin.shell: oscap xccdf eval --oval-results --profile cis --results-arf /tmp/arf.xml --report /tmp/report-rockeylinux8.html /usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml
+      args:
+        chdir: /tmp
+      register: oscap_scan_output
+      failed_when: oscap_scan_output.rc != 0 and "fail" in oscap_scan_output.stderr | lower
+    when: ansible_distribution == 'Rocky' and ansible_distribution_major_version == '8'
+  - name: On RHEL 9
+    block:
+    - name: Install packages for OSCAP in RHEL 9
+      yum:
+        name:
+        - openscap-scanner
+        - scap-security-guide
+        state: present
+    - name: Create the Report in RHEL 9
+      ansible.builtin.shell: oscap xccdf eval --oval-results --profile cis --results-arf /tmp/arf.xml --report /tmp/report-rhel9.html /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+      args:
+        chdir: /tmp
+      register: oscap_scan_output
+      failed_when: oscap_scan_output.rc != 0 and "fail" in oscap_scan_output.stderr | lower
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "9"
