@@ -1,0 +1,35 @@
+---
+- name: Install packages for OSCAP and generate report
+  hosts: all
+  become: true
+  tasks:
+  - name: On RHEL 9
+    block:
+    - name: Install packages for OSCAP
+      yum:
+        name:
+        - openscap-scanner
+        - scap-security-guide
+        state: present
+    - name: Create the Report
+      ansible.builtin.shell: oscap xccdf eval --oval-results --profile cis --results-arf /tmp/arf.xml --report /tmp/report-rhel9.html /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+      args:
+        chdir: /tmp
+      register: oscap_scan_output
+      failed_when: oscap_scan_output.rc != 0 and "fail" in oscap_scan_output.stderr | lower
+    when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "9"
+  - name: On AmazonLinux2023
+    block:
+    - name: Install packages for OSCAP
+      yum:
+        name:
+        - openscap-scanner
+        - scap-security-guide
+        state: present
+    - name: Create the Report
+      ansible.builtin.shell: oscap xccdf eval --oval-results --profile xccdf_org.ssgproject.content_profile_standard --results-arf /tmp/arf.xml --report /tmp/report-amazonlinux2023.html /usr/share/xml/scap/ssg/content/ssg-al2023-ds.xml
+      args:
+        chdir: /tmp
+      register: oscap_scan_output
+      failed_when: oscap_scan_output.rc != 0 and "fail" in oscap_scan_output.stderr | lower
+    when: ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2023'
